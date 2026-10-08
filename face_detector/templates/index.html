@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haar Cascade Face & Eye Detection | BCA Lab Submission</title>
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --panel-bg: #131b2e;
+            --panel-border: #1f2d4a;
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --accent-purple: #7f00ff;
+            --accent-magenta: #ff0844;
+            --accent-green: #00e676;
+            --text-main: #f0f4f8;
+            --text-muted: #94a3b8;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            line-height: 1.5;
+            padding-bottom: 40px;
+        }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(135deg, #0d1527 0%, #172440 100%);
+            border-bottom: 1px solid var(--panel-border);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .badge-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: rgba(0, 242, 254, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-green {
+            background: rgba(0, 230, 118, 0.1);
+            color: var(--accent-green);
+            border-color: rgba(0, 230, 118, 0.3);
+        }
+
+        /* CONTAINER LAYOUT */
+        .container {
+            max-width: 1400px;
+            margin: 25px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* SIDEBAR PANEL */
+        .sidebar {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .label-val {
+            color: var(--accent-cyan);
+            font-family: monospace;
+        }
+
+        /* CUSTOM INPUTS & SELECTS */
+        select, input[type="file"] {
+            width: 100%;
+            background: #0d1322;
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 8px rgba(79, 172, 254, 0.3);
+        }
+
+        /* SLIDERS */
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        /* DROP ZONE */
+        .drop-zone {
+            border: 2px dashed var(--panel-border);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(13, 19, 34, 0.5);
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 242, 254, 0.05);
+        }
+
+        .drop-zone svg {
+            width: 36px;
+            height: 36px;
+            fill: var(--text-muted);
+            margin-bottom: 8px;
+            transition: fill 0.3s;
+        }
+
+        .drop-zone:hover svg {
+            fill: var(--accent-cyan);
+        }
+
+        .drop-zone p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        /* BUTTONS */
+        .btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: #ffffff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(127, 0, 255, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(127, 0, 255, 0.5);
+        }
+
+        .btn-secondary {
+            background: #1e293b;
+            color: var(--text-main);
+            border: 1px solid var(--panel-border);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: #334155;
+            box-shadow: none;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* WEBCAM CANVAS CONTAINER */
+        #webcam-container {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            background: #000000;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--panel-border);
+        }
+
+        #webcam-video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* MAIN CONTENT AREA */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* LATENCY & METRICS DASHBOARD */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .metric-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-cyan);
+        }
+
+        .metric-card.purple::before { background: var(--accent-purple); }
+        .metric-card.green::before { background: var(--accent-green); }
+        .metric-card.magenta::before { background: var(--accent-magenta); }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        .metric-sub {
+            font-size: 0.72rem;
+            color: var(--accent-cyan);
+            margin-top: 2px;
+        }
+
+        /* IMAGE STAGE / DISPLAY */
+        .stage-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stage-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .stage-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .img-wrapper {
+            background: #060911;
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 280px;
+            position: relative;
+        }
+
+        .img-wrapper img {
+            max-width: 100%;
+            max-height: 450px;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+
+        .img-tag {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        /* TABLE SECTION */
+        .table-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        th {
+            background: #0d1322;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 12px;
+            border-bottom: 1px solid var(--panel-border);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(31, 45, 74, 0.5);
+            color: var(--text-main);
+            font-family: monospace;
+        }
+
+        tr:hover td {
+            background: rgba(0, 242, 254, 0.03);
+        }
+
+        .tag-face {
+            background: rgba(0, 242, 254, 0.15);
+            color: var(--accent-cyan);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .tag-eye {
+            background: rgba(255, 8, 68, 0.15);
+            color: var(--accent-magenta);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* SPINNER */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* VIVA NOTES ACCORDION */
+        .viva-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .viva-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .viva-box {
+            background: #0d1322;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .viva-box h4 {
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            margin-bottom: 6px;
+        }
+
+        .viva-box p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="brand">
+            <h1>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="5"></rect>
+                    <path d="M7 10h4M13 10h4M9 16h6"></path>
+                </svg>
+                VisionPulse | Haar Cascade Detector
+            </h1>
+            <p>BCA Computer Vision & Image Processing Practical Submission</p>
+        </div>
+        <div class="badge-group">
+            <span class="badge badge-green">● Offline Mode Active</span>
+            <span class="badge">OpenCV 5.0</span>
+            <span class="badge">Flask 3.1</span>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        
+        <!-- SIDEBAR CONTROLS -->
+        <div class="sidebar">
+            <div class="section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                Input Source
+            </div>
+
+            <!-- SOURCE SELECTION -->
+            <div class="form-group">
+                <label for="inputSource">Select Source</label>
+                <select id="inputSource" onchange="toggleInputSource()">
+                    <option value="upload">📁 File Upload</option>
+                    <option value="webcam">📷 Live Webcam Capture</option>
+                    <option value="sample">🧪 Synthetic Test Pattern</option>
+                </select>
+            </div>
+
+            <!-- DROP ZONE FOR FILE UPLOAD -->
+            <div id="upload-container">
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    <p><strong>Click to upload</strong> or drag image file here</p>
+                    <p style="font-size: 0.72rem; margin-top:4px;">Supports JPG, PNG, WEBP, BMP</p>
+                    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+                </div>
+            </div>
+
+            <!-- WEBCAM CONTAINER -->
+            <div id="webcam-container">
+                <video id="webcam-video" autoplay playsinline muted></video>
+                <div class="btn-row" style="padding: 10px;">
+                    <button class="btn btn-secondary" onclick="startWebcam()" style="font-size: 0.8rem; padding: 6px;">Start Cam</button>
+                    <button class="btn" onclick="captureWebcam()" style="font-size: 0.8rem; padding: 6px;">Snap & Process</button>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 10px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Detection & Mode Config
+            </div>
+
+            <!-- TARGET SELECTOR -->
+            <div class="form-group">
+                <label for="targetSelect">Detection Target</label>
+                <select id="targetSelect">
+                    <option value="both">Face + Eyes (Nested ROI)</option>
+                    <option value="face">Face Only</option>
+                    <option value="eye">Eye Only</option>
+                </select>
+            </div>
+
+            <!-- MODE SELECTOR -->
+            <div class="form-group">
+                <label for="modeSelect">Visual & Privacy Mode</label>
+                <select id="modeSelect">
+                    <option value="highlight">🟩 Highlight Mode (Bounding Box HUD)</option>
+                    <option value="blur">💧 Privacy: Gaussian Blur</option>
+                    <option value="pixelate">🧩 Privacy: Pixelate Mosaic</option>
+                    <option value="blackout">⬛ Privacy: Censor Bar Blackout</option>
+                </select>
+            </div>
+
+            <!-- HYPERPARAMETERS -->
+            <div class="form-group">
+                <label for="scaleFactor">
+                    Scale Factor (scaleFactor)
+                    <span class="label-val" id="scaleFactorVal">1.10</span>
+                </label>
+                <input type="range" id="scaleFactor" min="1.05" max="1.50" step="0.05" value="1.10" oninput="document.getElementById('scaleFactorVal').innerText = parseFloat(this.value).toFixed(2)">
+            </div>
+
+            <div class="form-group">
+                <label for="minNeighbors">
+                    Min Neighbors (minNeighbors)
+                    <span class="label-val" id="minNeighborsVal">5</span>
+                </label>
+                <input type="range" id="minNeighbors" min="1" max="15" step="1" value="5" oninput="document.getElementById('minNeighborsVal').innerText = this.value">
+            </div>
+
+            <div class="form-group">
+                <label for="minSize">
+                    Min Detection Size (px)
+                    <span class="label-val" id="minSizeVal">30</span>
+                </label>
+                <input type="range" id="minSize" min="10" max="100" step="5" value="30" oninput="document.getElementById('minSizeVal').innerText = this.value">
+            </div>
+
+            <button class="btn" id="runBtn" onclick="submitDetection()">
+                <span>Run Detection Engine</span>
+            </button>
+        </div>
+
+        <!-- MAIN WORKSPACE -->
+        <div class="main-content">
+            
+            <!-- LATENCY & METRICS DASHBOARD -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Latency</div>
+                    <div class="metric-val" id="totalLatency">0.0 ms</div>
+                    <div class="metric-sub" id="fpsEstimate">0.0 FPS equivalent</div>
+                </div>
+
+                <div class="metric-card purple">
+                    <div class="metric-label">Detection Time</div>
+                    <div class="metric-val" id="detectionTime">0.0 ms</div>
+                    <div class="metric-sub">Cascade Processing</div>
+                </div>
+
+                <div class="metric-card green">
+                    <div class="metric-label">Objects Detected</div>
+                    <div class="metric-val" id="totalObjects">0</div>
+                    <div class="metric-sub" id="objectsBreakdown">0 Faces | 0 Eyes</div>
+                </div>
+
+                <div class="metric-card magenta">
+                    <div class="metric-label">Canvas Size</div>
+                    <div class="metric-val" id="imageDim">0 × 0</div>
+                    <div class="metric-sub">Pixels</div>
+                </div>
+            </div>
+
+            <!-- IMAGE COMPARISON STAGE -->
+            <div class="stage-card">
+                <div class="stage-header">
+                    <h3 style="font-size: 1.05rem; font-weight: 600;">Image Processing Stage</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);" id="stageStatus">Select or upload an image to start</div>
+                </div>
+
+                <div class="stage-grid">
+                    <!-- ORIGINAL IMAGE -->
+                    <div class="img-wrapper">
+                        <span class="img-tag">Original Input</span>
+                        <img id="originalPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='100%' height='100%' fill='%230b0f19'/><text x='50%' y='50%' fill='%23475569' font-family='sans-serif' font-size='14' text-anchor='middle'>No Input Image Loaded</text></svg>" alt="Original Input">
+                    </div>
+
+                    <!-- PROCESSED IMAGE -->
+                    <div class="img-wrapper">
+                        <span class="img-tag">Processed Result</span>
+                        <img id="processedPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='100%' height='100%' fill='%230b0f19'/><text x='50%' y='50%' fill='%23475569' font-family='sans-serif' font-size='14' text-anchor='middle'>Output Ready After Processing</text></svg>" alt="Processed Output">
+                    </div>
+                </div>
+            </div>
+
+            <!-- COORDINATES TABLE -->
+            <div class="table-card">
+                <div class="table-header">
+                    <h3 style="font-size: 1.05rem; font-weight: 600;">Feature Bounding Box Coordinate Table</h3>
+                    <button class="btn btn-secondary" style="width: auto; font-size: 0.8rem; padding: 6px 14px;" onclick="exportCSV()">
+                        📥 Export Coords to CSV
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Target</th>
+                                <th>Feature ID</th>
+                                <th>Top-Left (X, Y)</th>
+                                <th>Size (W × H)</th>
+                                <th>Center (X, Y)</th>
+                                <th>Bounding Area</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coordsTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                                    No features detected yet. Execute detection engine to view coordinate analysis.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIVA QUESTIONS REFERENCE CARD -->
+            <div class="viva-card">
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-main);">
+                    💡 BCA Practical Viva Reference: Haar Cascade Concepts
+                </h3>
+                <div class="viva-grid">
+                    <div class="viva-box">
+                        <h4>1. Integral Image Calculation</h4>
+                        <p>Allows rapid evaluation of rectangular Haar features in constant time \(O(1)\) regardless of scale, summing pixel values inside any sub-rectangle using 4 array lookups.</p>
+                    </div>
+                    <div class="viva-box">
+                        <h4>2. AdaBoost Feature Selection</h4>
+                        <p>Selects the most critical visual features out of 160,000+ candidates, combining multiple weak classifiers into a high-accuracy strong classifier.</p>
+                    </div>
+                    <div class="viva-box">
+                        <h4>3. Cascaded Classifier Architecture</h4>
+                        <p>Organizes classifiers in stages. Non-face regions are rejected immediately in stage 1 with minimal computational cost, saving GPU/CPU resources.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT FOR INTERACTION & API INTEGRATION -->
+    <script>
+        let selectedFile = null;
+        let webcamStream = null;
+        let lastDetectionResults = [];
+
+        // Drag and Drop listeners
+        const dropZone = document.getElementById('dropZone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(event) {
+            if (event.target.files.length > 0) {
+                handleFile(event.target.files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('originalPreview').src = e.target.result;
+                document.getElementById('stageStatus').innerText = `Loaded image: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function toggleInputSource() {
+            const source = document.getElementById('inputSource').value;
+            const uploadBox = document.getElementById('upload-container');
+            const webcamBox = document.getElementById('webcam-container');
+
+            if (source === 'upload') {
+                uploadBox.style.display = 'block';
+                webcamBox.style.display = 'none';
+                stopWebcam();
+            } else if (source === 'webcam') {
+                uploadBox.style.display = 'none';
+                webcamBox.style.display = 'flex';
+                startWebcam();
+            } else if (source === 'sample') {
+                uploadBox.style.display = 'none';
+                webcamBox.style.display = 'none';
+                stopWebcam();
+                loadSamplePattern();
+            }
+        }
+
+        async function startWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('webcam-video');
+                video.srcObject = webcamStream;
+            } catch (err) {
+                alert('Webcam access error: ' + err.message);
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+        }
+
+        function captureWebcam() {
+            const video = document.getElementById('webcam-video');
+            if (!video.srcObject) {
+                alert('Please start webcam first');
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            document.getElementById('originalPreview').src = dataUrl;
+            selectedFile = dataUrl; // store base64 string
+            document.getElementById('stageStatus').innerText = 'Captured live snapshot from webcam';
+            
+            submitDetection();
+        }
+
+        async function loadSamplePattern() {
+            try {
+                document.getElementById('stageStatus').innerText = 'Generating synthetic sample pattern...';
+                const resp = await fetch('/sample');
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    document.getElementById('originalPreview').src = data.image_b64;
+                    selectedFile = data.image_b64;
+                    document.getElementById('stageStatus').innerText = 'Loaded synthetic test pattern';
+                    submitDetection();
+                }
+            } catch (err) {
+                alert('Failed to load sample: ' + err.message);
+            }
+        }
+
+        async function submitDetection() {
+            if (!selectedFile) {
+                alert('Please upload an image, capture from webcam, or select synthetic pattern first.');
+                return;
+            }
+
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<span class="spinner"></span> Processing OpenCV Engine...';
+
+            const formData = new FormData();
+            formData.append('target', document.getElementById('targetSelect').value);
+            formData.append('mode', document.getElementById('modeSelect').value);
+            formData.append('scaleFactor', document.getElementById('scaleFactor').value);
+            formData.append('minNeighbors', document.getElementById('minNeighbors').value);
+            formData.append('minSize', document.getElementById('minSize').value);
+
+            if (typeof selectedFile === 'string') {
+                // Base64 string from webcam or sample
+                formData.append('base64_image', selectedFile);
+            } else {
+                // File object
+                formData.append('image', selectedFile);
+            }
+
+            try {
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    // Update Processed Image
+                    document.getElementById('processedPreview').src = result.processed_image_b64;
+
+                    // Update Latency Badges
+                    document.getElementById('totalLatency').innerText = `${result.latency.total_latency_ms} ms`;
+                    document.getElementById('detectionTime').innerText = `${result.latency.detection_ms} ms`;
+                    document.getElementById('fpsEstimate').innerText = `${result.latency.fps_estimate} FPS equivalent`;
+                    document.getElementById('totalObjects').innerText = result.summary.total_objects;
+                    document.getElementById('objectsBreakdown').innerText = `${result.summary.faces_detected} Faces | ${result.summary.eyes_detected} Eyes`;
+                    document.getElementById('imageDim').innerText = `${result.summary.image_width} × ${result.summary.image_height}`;
+
+                    // Update Table
+                    updateTable(result.coordinates);
+                    lastDetectionResults = result.coordinates;
+
+                    document.getElementById('stageStatus').innerText = `Completed in ${result.latency.total_latency_ms} ms (${result.summary.mode_applied} mode)`;
+                } else {
+                    alert('Error: ' + (result.error || 'Detection failed'));
+                }
+            } catch (err) {
+                alert('Network / Processing Exception: ' + err.message);
+            } finally {
+                runBtn.disabled = false;
+                runBtn.innerHTML = '<span>Run Detection Engine</span>';
+            }
+        }
+
+        function updateTable(coords) {
+            const tbody = document.getElementById('coordsTableBody');
+            tbody.innerHTML = '';
+
+            if (!coords || coords.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                            No faces or eyes detected with current parameters. Try adjusting scaleFactor or minNeighbors.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            coords.forEach(row => {
+                const tr = document.createElement('tr');
+                const tagClass = row.type === 'Face' ? 'tag-face' : 'tag-eye';
+                tr.innerHTML = `
+                    <td><span class="${tagClass}">${row.type}</span></td>
+                    <td><strong>${row.id}</strong></td>
+                    <td>(${row.x}, ${row.y})</td>
+                    <td>${row.w} × ${row.h} px</td>
+                    <td>(${row.center_x}, ${row.center_y})</td>
+                    <td>${row.area.toLocaleString()} px²</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportCSV() {
+            if (!lastDetectionResults || lastDetectionResults.length === 0) {
+                alert('No coordinate data available to export.');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Type,ID,X,Y,Width,Height,Center_X,Center_Y,Area_Pixels\n";
+            lastDetectionResults.forEach(r => {
+                csvContent += `${r.type},${r.id},${r.x},${r.y},${r.w},${r.h},${r.center_x},${r.center_y},${r.area}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "haar_detection_coordinates.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
